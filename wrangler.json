@@ -1,19 +1,13 @@
 {
-  "name": "dont-kill-the-jammer",
-  "main": "src/index.ts",
+  "name": "artisticjammer",
+  "main": "index.ts",
   "compatibility_date": "2025-03-07",
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
   },
-  "vars": {
-    "THIRDWEB_NETWORK": "optimism",
-    "NFT_CONTRACT_ADDRESS": "0x9B4A8c5C1452bF204B65C7DDbe202E7A3c79cF3D"
-  },
-  "bindings": {
-    "AI": {
-      "type": "ai"
-    }
+  "ai": {
+    "binding": "AI"
   }
 }
