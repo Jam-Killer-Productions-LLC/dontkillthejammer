@@ -1,5 +1,6 @@
 {
   "name": "artisticjammer",
+  "version": "1.0.0",
   "description": "Generate images based on text prompts.",
   "cloudflare": {
     "label": "Text to Image App",
@@ -28,7 +29,13 @@
   },
   "dependencies": {
     "@thirdweb-dev/sdk": "^4.0.99",
-    "thirdweb": "^5.92.1"
+    "thirdweb": "^5.92.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "ethers": "^5.7.2"
+  },
+  "resolutions": {
+    "ethers": "^5.7.2"
   },
   "packageManager": "yarn@4.7.0"
 }
