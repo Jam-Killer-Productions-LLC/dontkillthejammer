@@ -25,5 +25,10 @@
     "deploy": "wrangler --experimental-json-config deploy",
     "dev": "wrangler --experimental-json-config dev",
     "types": "wrangler --experimental-json-config types"
-  }
+  },
+  "dependencies": {
+    "@thirdweb-dev/sdk": "^4.0.99",
+    "thirdweb": "^5.92.1"
+  },
+  "packageManager": "yarn@4.7.0"
 }
