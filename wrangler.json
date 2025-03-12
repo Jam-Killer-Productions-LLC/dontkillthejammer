@@ -1,5 +1,5 @@
 {
-  "name": "artisticjammer",
+  "name": "dont-kill-the-jammer",
   "main": "src/index.ts",
   "compatibility_date": "2025-03-07",
   "compatibility_flags": ["nodejs_compat"],
