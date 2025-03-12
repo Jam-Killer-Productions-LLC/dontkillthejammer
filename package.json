@@ -29,10 +29,10 @@
   },
   "dependencies": {
     "@thirdweb-dev/sdk": "^4.0.99",
-    "thirdweb": "^5.92.1",
+    "ethers": "^5.7.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "ethers": "^5.7.2"
+    "thirdweb": "^5.92.1"
   },
   "resolutions": {
     "ethers": "^5.7.2"
