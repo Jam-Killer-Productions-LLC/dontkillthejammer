@@ -1,7 +1,12 @@
+interface Env {
+  IPFS_UPLOAD_URL: string;
+  IPFS_API_KEY: string;
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method !== "POST") {
-      return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
+      return new Response("Method Not Allowed", { status: 405 });
     }
 
     try {
@@ -17,22 +22,21 @@ export default {
       });
 
       if (!ipfsResponse.ok) {
-        const errorDetail = await ipfsResponse.text();
-        throw new Error(`IPFS upload failed: ${errorDetail}`);
+        const errorText = await ipfsResponse.text();
+        throw new Error(`IPFS upload failed: ${errorText}`);
       }
 
       const ipfsResult = await ipfsResponse.json();
 
       return new Response(JSON.stringify({ success: true, ipfsResult }), {
-        status: 200,
         headers: { "Content-Type": "application/json" },
+        status: 200,
       });
     } catch (error: any) {
-      console.error("IPFS Upload Error:", error);
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 500,
+      return new Response(JSON.stringify({ success: false, error: error.message }), {
         headers: { "Content-Type": "application/json" },
+        status: 500,
       });
     }
-  }
+  },
 };
