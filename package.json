@@ -13,8 +13,7 @@
     "url": "https://github.com/Jam-Killer-Productions-LLC/dontkillthejammer.git"
   },
   "dependencies": {
-    "thirdweb": "4.9.4",
-    "hono": "^4.7.4"
+    "thirdweb": "latest"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250313.0"
