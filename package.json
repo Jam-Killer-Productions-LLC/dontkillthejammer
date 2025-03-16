@@ -1,40 +1,22 @@
 {
-  "name": "artisticjammer",
+  "name": "dont-kill-the-jammer",
   "version": "1.0.0",
-  "description": "Generate images based on text prompts.",
-  "cloudflare": {
-    "label": "Text to Image App",
-    "products": [
-      "Workers",
-      "AI"
-    ],
-    "categories": [
-      "ai"
-    ],
-    "icon_urls": [
-      "https://imagedelivery.net/wSMYJvS3xw-n339CbDyDIA/dddfe97e-e689-450b-d5a9-d49801da6a00/public"
-    ],
-    "preview_image_url": "https://imagedelivery.net/wSMYJvS3xw-n339CbDyDIA/dddfe97e-e689-450b-d5a9-d49801da6a00/public"
-  },
-  "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250311.0",
-    "typescript": "5.7.2",
-    "wrangler": "^3.114.1"
-  },
+  "main": "worker/index.ts",
   "scripts": {
-    "check": "wrangler --experimental-json-config deploy --dry-run",
-    "deploy": "wrangler --experimental-json-config deploy",
-    "dev": "wrangler --experimental-json-config dev",
-    "types": "wrangler --experimental-json-config types"
+    "dev": "wrangler dev",
+    "build": "wrangler build",
+    "deploy": "npx wrangler deploy",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jam-Killer-Productions-LLC/dontkillthejammer.git"
   },
   "dependencies": {
-    "@thirdweb-dev/sdk": "^4.0.99",
-    "ethers": "^5.7.2",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "thirdweb": "^latest",
+    "hono": "^4.7.4"
   },
-  "resolutions": {
-    "ethers": "^5.7.2"
-  },
-  "packageManager": "yarn@4.7.0"
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250313.0"
+  }
 }

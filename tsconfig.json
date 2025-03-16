@@ -1,15 +1,15 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "lib": ["esnext"],
     "module": "esnext",
-    "moduleResolution": "bundler",
-    "types": ["@cloudflare/workers-types", "./worker-configuration.d.ts"],
-    "noEmit": true,
+    "lib": ["esnext"],
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
     "isolatedModules": true,
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
-    "strict": true
+    "noEmit": true,
+    "types": ["@cloudflare/workers-types"],
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["src"]
+  "include": ["worker/**/*.ts"]
 }
