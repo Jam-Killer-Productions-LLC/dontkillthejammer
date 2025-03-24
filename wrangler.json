@@ -23,10 +23,6 @@
     {
       "pattern": "metaupload.producerprotocol.pro/*",
       "zone_name": "producerprotocol.pro"
-    },
-    {
-      "pattern": "nftartist.producerprotocol.pro/*",
-      "zone_name": "producerprotocol.pro"
     }
   ]
 }
