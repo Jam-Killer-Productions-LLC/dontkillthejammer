@@ -14,7 +14,7 @@ interface GenerateRequest {
 
 // Type for artistic-worker response
 interface ArtisticResponse {
-  base64Image: string | null;
+  image: Uint8Array;
   error?: string;
 }
 
@@ -32,8 +32,9 @@ interface IpfsResponse {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    const isNftArtist = url.hostname === "nftartist.producerprotocol.pro";
 
-    // Match metaupload.producerprotocol.pro/generate
+    // Match /generate endpoint for both domains
     if (request.method === "POST" && url.pathname === "/generate") {
       try {
         // Step 1: Parse and type the request JSON
@@ -49,19 +50,54 @@ export default {
 
         // Step 2: Fetch base64 image from artistic-worker
         const artisticResponse = await env.ARTISTICJAMKILLER.fetch(
-          new Request("https://fake-url/get-image", {
+          new Request("https://artistic-worker.producerprotocol.pro/generate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ cryptoAddress }),
+            body: JSON.stringify({ 
+              cryptoAddress,
+              prompt: "Create an NFT image for \"Don't Kill The Jam - A Jam Killer Storied Collectors NFT\". The image should evoke a dystopian, rebellious musical world with neon highlights and gritty, futuristic details."
+            }),
           })
         );
-        const artisticData = (await artisticResponse.json()) as ArtisticResponse;
-        const base64Image = artisticData.base64Image;
+
+        if (!artisticResponse.ok) {
+          throw new Error(`Artistic worker responded with status ${artisticResponse.status}`);
+        }
+
+        // Handle ReadableStream response
+        const reader = artisticResponse.body?.getReader();
+        if (!reader) {
+          throw new Error("No response body from artistic worker");
+        }
+
+        let chunks: Uint8Array[] = [];
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+        }
+        const imageBuffer = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0));
+        let offset = 0;
+        for (const chunk of chunks) {
+          imageBuffer.set(chunk, offset);
+          offset += chunk.length;
+        }
+
+        // If this is a request from nftartist domain, return the image directly
+        if (isNftArtist) {
+          return new Response(imageBuffer, {
+            headers: {
+              "Content-Type": "image/png",
+              "Cache-Control": "no-cache",
+            },
+          });
+        }
+
+        // For metaupload domain, continue with the full NFT generation process
+        // Convert buffer to base64
+        const base64Image = btoa(String.fromCharCode(...imageBuffer));
         if (!base64Image) {
-          return new Response(
-            JSON.stringify({ success: false, error: "Image not found from artistic-worker" }),
-            { headers: { "Content-Type": "application/json" }, status: 404 }
-          );
+          throw new Error("Failed to convert image buffer to base64");
         }
 
         // Step 3: Convert base64 to Blob and upload to IPFS
