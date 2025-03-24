@@ -4,8 +4,15 @@ interface Env {
 
 // Type for the incoming request payload
 interface GenerateRequest {
-  cryptoAddress: string;
-  prompt?: string;
+  userId: string;
+  prompt: string;
+}
+
+// Type for the response
+interface GenerateImageResponse {
+  message: string;
+  userId: string;
+  image: string; // base64 encoded image
 }
 
 export default {
@@ -27,12 +34,16 @@ export default {
     if (request.method === "POST" && url.pathname === "/generate") {
       try {
         // Step 1: Parse and type the request JSON
-        const { cryptoAddress, prompt } = (await request.json()) as GenerateRequest;
+        const { userId, prompt } = (await request.json()) as GenerateRequest;
 
         // Validate inputs
-        if (!cryptoAddress) {
+        if (!userId || !prompt) {
           return new Response(
-            JSON.stringify({ success: false, error: "Missing cryptoAddress" }),
+            JSON.stringify({ 
+              message: "Missing required fields",
+              userId: userId || "",
+              image: ""
+            }),
             { 
               headers: { 
                 "Content-Type": "application/json",
@@ -49,8 +60,8 @@ export default {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
-              cryptoAddress,
-              prompt: prompt || "Create an NFT image for \"Don't Kill The Jam - A Jam Killer Storied Collectors NFT\". The image should evoke a dystopian, rebellious musical world with neon highlights and gritty, futuristic details."
+              userId,
+              prompt
             }),
           })
         );
@@ -78,18 +89,36 @@ export default {
           offset += chunk.length;
         }
 
-        // Return the image directly
-        return new Response(imageBuffer, {
-          headers: {
-            "Content-Type": "image/png",
-            "Cache-Control": "no-cache",
-            "Access-Control-Allow-Origin": "*"
-          },
-        });
+        // Convert buffer to base64
+        const base64Image = btoa(String.fromCharCode(...imageBuffer));
+        if (!base64Image) {
+          throw new Error("Failed to convert image buffer to base64");
+        }
+
+        // Return the response in the expected format
+        const response: GenerateImageResponse = {
+          message: "Image generated successfully",
+          userId: userId,
+          image: `data:image/png;base64,${base64Image}`
+        };
+
+        return new Response(
+          JSON.stringify(response),
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*"
+            }
+          }
+        );
 
       } catch (error: any) {
         return new Response(
-          JSON.stringify({ success: false, error: error.message }),
+          JSON.stringify({
+            message: error.message,
+            userId: "",
+            image: ""
+          }),
           { 
             headers: { 
               "Content-Type": "application/json",
@@ -101,11 +130,19 @@ export default {
       }
     }
 
-    return new Response("Method Not Allowed or Invalid Endpoint", { 
-      status: 405,
-      headers: {
-        "Access-Control-Allow-Origin": "*"
+    return new Response(
+      JSON.stringify({
+        message: "Method Not Allowed or Invalid Endpoint",
+        userId: "",
+        image: ""
+      }), 
+      { 
+        status: 405,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
+        }
       }
-    });
+    );
   },
 };
