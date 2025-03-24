@@ -1,18 +1,12 @@
 interface Env {
   ARTISTICJAMKILLER: Service; // Binding to artistic-worker
+  NARRATIVESJAMKILLER: Service; // Binding to jamkillernarrative
 }
 
 // Type for the incoming request payload
 interface GenerateRequest {
   userId: string;
   prompt: string;
-}
-
-// Type for the response
-interface GenerateImageResponse {
-  message: string;
-  userId: string;
-  image: string; // base64 encoded image
 }
 
 export default {
@@ -40,9 +34,8 @@ export default {
         if (!userId || !prompt) {
           return new Response(
             JSON.stringify({ 
-              message: "Missing required fields",
-              userId: userId || "",
-              image: ""
+              success: false, 
+              error: "Missing required fields" 
             }),
             { 
               headers: { 
@@ -95,15 +88,25 @@ export default {
           throw new Error("Failed to convert image buffer to base64");
         }
 
-        // Return the response in the expected format
-        const response: GenerateImageResponse = {
-          message: "Image generated successfully",
-          userId: userId,
-          image: `data:image/png;base64,${base64Image}`
-        };
+        // Signal meta upload worker that image is ready
+        await env.NARRATIVESJAMKILLER.fetch(
+          new Request("https://metaupload.producerprotocol.pro/image-ready", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              userId,
+              image: `data:image/png;base64,${base64Image}`
+            }),
+          })
+        );
 
+        // Return success response
         return new Response(
-          JSON.stringify(response),
+          JSON.stringify({
+            success: true,
+            message: "Image generated successfully",
+            image: `data:image/png;base64,${base64Image}`
+          }),
           {
             headers: {
               "Content-Type": "application/json",
@@ -115,9 +118,8 @@ export default {
       } catch (error: any) {
         return new Response(
           JSON.stringify({
-            message: error.message,
-            userId: "",
-            image: ""
+            success: false,
+            error: error.message
           }),
           { 
             headers: { 
@@ -132,9 +134,8 @@ export default {
 
     return new Response(
       JSON.stringify({
-        message: "Method Not Allowed or Invalid Endpoint",
-        userId: "",
-        image: ""
+        success: false,
+        error: "Method Not Allowed or Invalid Endpoint"
       }), 
       { 
         status: 405,
