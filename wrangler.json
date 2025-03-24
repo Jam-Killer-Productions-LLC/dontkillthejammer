@@ -1,10 +1,22 @@
 {
-  "name": "dont-kill-the-jammer",
-  "main": "worker/index.ts",
+  "name": "dontkillthejamjam",
+  "main": "src/index.ts",
   "compatibility_date": "2025-03-07",
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
-  }
+  },
+  "services": [
+    {
+      "binding": "ARTISTICJAMKILLER",
+      "service": "artistic-worker",
+      "environment": "production"
+    },
+    {
+      "binding": "NARRATIVESJAMKILLER",
+      "service": "jamkillernarrative",
+      "environment": "production"
+    }
+  ]
 }
