@@ -4,7 +4,29 @@ interface Env {
   THIRDWEB_SECRET_KEY: string;
   ARTISTICJAMKILLER: Service; // Binding to artistic-worker
   NARRATIVESJAMKILLER: Service; // Binding to jamkillernarrative
-  // AJAMKILLERSTORY?: KVNamespace; // Optional new KV namespace (uncomment if needed)
+}
+
+// Type for the incoming request payload
+interface GenerateRequest {
+  cryptoAddress: string;
+  mojoScore: number;
+}
+
+// Type for artistic-worker response
+interface ArtisticResponse {
+  base64Image: string | null;
+  error?: string;
+}
+
+// Type for jamkillernarrative response
+interface NarrativeResponse {
+  narrative: string | null;
+  error?: string;
+}
+
+// Type for IPFS upload response (adjust based on QuickNode's actual response)
+interface IpfsResponse {
+  cid: string;
 }
 
 export default {
@@ -13,7 +35,8 @@ export default {
 
     if (request.method === "POST" && url.pathname === "/generate") {
       try {
-        const { cryptoAddress, mojoScore } = await request.json();
+        // Step 1: Parse and type the request JSON
+        const { cryptoAddress, mojoScore } = (await request.json()) as GenerateRequest;
 
         // Validate inputs
         if (!cryptoAddress || typeof mojoScore !== "number") {
@@ -23,7 +46,7 @@ export default {
           );
         }
 
-        // Step 1: Fetch base64 image from artistic-worker via service binding
+        // Step 2: Fetch base64 image from artistic-worker
         const artisticResponse = await env.ARTISTICJAMKILLER.fetch(
           new Request("https://fake-url/get-image", {
             method: "POST",
@@ -31,7 +54,8 @@ export default {
             body: JSON.stringify({ cryptoAddress }),
           })
         );
-        const { base64Image } = await artisticResponse.json();
+        const artisticData = (await artisticResponse.json()) as ArtisticResponse;
+        const base64Image = artisticData.base64Image;
         if (!base64Image) {
           return new Response(
             JSON.stringify({ success: false, error: "Image not found from artistic-worker" }),
@@ -39,11 +63,11 @@ export default {
           );
         }
 
-        // Step 2: Convert base64 to Blob and upload to IPFS
+        // Step 3: Convert base64 to Blob and upload to IPFS
         const imageBlob = base64ToBlob(base64Image, "image/png");
         const imageIpfsHash = await uploadFileToIpfs(imageBlob, env);
 
-        // Step 3: Get narrative from jamkillernarrative via service binding
+        // Step 4: Get narrative from jamkillernarrative
         const narrativeResponse = await env.NARRATIVESJAMKILLER.fetch(
           new Request("https://fake-url/get-narrative", {
             method: "POST",
@@ -51,12 +75,13 @@ export default {
             body: JSON.stringify({ mojoScore }),
           })
         );
-        const { narrative } = await narrativeResponse.json();
+        const narrativeData = (await narrativeResponse.json()) as NarrativeResponse;
+        const narrative = narrativeData.narrative;
         if (!narrative) {
           throw new Error("Failed to get narrative from jamkillernarrative");
         }
 
-        // Step 4: Create metadata with specific NFT name
+        // Step 5: Create metadata with specific NFT name
         const metadata = {
           name: "Don't Kill the Jam Jam Killer Story NFT",
           description: narrative,
@@ -64,16 +89,13 @@ export default {
           mojoScore: mojoScore,
         };
 
-        // Optional: Store metadata in new KV namespace (uncomment if using AJAMKILLERSTORY)
-        // await env.AJAMKILLERSTORY?.put(cryptoAddress + "-metadata", JSON.stringify(metadata));
-
-        // Step 5: Upload metadata to IPFS
+        // Step 6: Upload metadata to IPFS
         const metadataIpfsHash = await uploadJsonToIpfs(metadata, env);
 
-        // Step 6: Mint NFT (placeholder)
+        // Step 7: Mint NFT (placeholder)
         await mintNft(metadataIpfsHash, cryptoAddress, env.THIRDWEB_SECRET_KEY);
 
-        // Step 7: Return URLs
+        // Step 8: Return URLs
         return new Response(
           JSON.stringify({
             success: true,
@@ -118,7 +140,7 @@ async function uploadFileToIpfs(fileBlob: Blob, env: Env): Promise<string> {
     const errorText = await response.text();
     throw new Error(`IPFS file upload failed: ${errorText}`);
   }
-  const result = await response.json();
+  const result = (await response.json()) as IpfsResponse;
   return result.cid;
 }
 
@@ -136,7 +158,7 @@ async function uploadJsonToIpfs(metadata: any, env: Env): Promise<string> {
     const errorText = await response.text();
     throw new Error(`IPFS metadata upload failed: ${errorText}`);
   }
-  const result = await response.json();
+  const result = (await response.json()) as IpfsResponse;
   return result.cid;
 }
 
