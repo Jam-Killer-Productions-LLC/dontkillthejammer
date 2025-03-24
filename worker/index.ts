@@ -33,7 +33,7 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
-    // Match your path: metaupload.producerprotocol.pro/generate
+    // Match metaupload.producerprotocol.pro/generate
     if (request.method === "POST" && url.pathname === "/generate") {
       try {
         // Step 1: Parse and type the request JSON
@@ -82,9 +82,9 @@ export default {
           throw new Error("Failed to get narrative from jamkillernarrative");
         }
 
-        // Step 5: Create metadata with your exact NFT name
+        // Step 5: Create metadata with exact NFT name (no dashes)
         const metadata = {
-          name: "Don't Kill the Jam Jam Killer Story NFT",
+          name: "Dont Kill the Jammer Killer Story NFT",
           description: narrative,
           image: `ipfs://${imageIpfsHash}`,
           mojoScore: mojoScore,
