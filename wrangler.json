@@ -1,6 +1,6 @@
 {
-  "name": "dontkillthejamjam",
-  "main": "src/index.ts",
+  "name": "dontkillthejam",
+  "main": "worker/index.ts",
   "compatibility_date": "2025-03-07",
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
@@ -17,6 +17,12 @@
       "binding": "NARRATIVESJAMKILLER",
       "service": "jamkillernarrative",
       "environment": "production"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "metaupload.producerprotocol.pro/*",
+      "zone_name": "producerprotocol.pro"
     }
   ]
 }

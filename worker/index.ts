@@ -24,7 +24,7 @@ interface NarrativeResponse {
   error?: string;
 }
 
-// Type for IPFS upload response (adjust based on QuickNode's actual response)
+// Type for IPFS upload response (QuickNode)
 interface IpfsResponse {
   cid: string;
 }
@@ -33,6 +33,7 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
+    // Match your path: metaupload.producerprotocol.pro/generate
     if (request.method === "POST" && url.pathname === "/generate") {
       try {
         // Step 1: Parse and type the request JSON
@@ -81,7 +82,7 @@ export default {
           throw new Error("Failed to get narrative from jamkillernarrative");
         }
 
-        // Step 5: Create metadata with specific NFT name
+        // Step 5: Create metadata with your exact NFT name
         const metadata = {
           name: "Don't Kill the Jam Jam Killer Story NFT",
           description: narrative,
