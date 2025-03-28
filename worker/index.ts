@@ -223,6 +223,76 @@ export default {
       }
     }
 
+    // Add this handler right before your final "Method Not Allowed" response
+    else if (request.method === "POST" && url.pathname === "/upload") {
+      try {
+        const data = await request.json();
+        const { metadata, userId } = data as { metadata: any, userId: string };
+        
+        if (!userId || !metadata) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: "Missing required fields" 
+            }),
+            { 
+              headers: { 
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*"
+              }, 
+              status: 400 
+            }
+          );
+        }
+        
+        // Upload to IPFS using the secrets
+        const ipfsResponse = await fetch(env.IPFS_UPLOAD_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${env.IPFS_API_KEY}`
+          },
+          body: JSON.stringify(metadata)
+        });
+        
+        if (!ipfsResponse.ok) {
+          throw new Error(`IPFS upload failed: ${ipfsResponse.statusText}`);
+        }
+        
+        const ipfsResponseData = await ipfsResponse.json();
+        const ipfsData = ipfsResponseData as IPFSResponse;
+        const ipfsUri = `ipfs://${ipfsData.cid}`;
+        
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: "Metadata uploaded to IPFS",
+            uri: ipfsUri
+          }),
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*"
+            }
+          }
+        );
+      } catch (error: any) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: error.message
+          }),
+          { 
+            headers: { 
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*"
+            }, 
+            status: 500 
+          }
+        );
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: false,
