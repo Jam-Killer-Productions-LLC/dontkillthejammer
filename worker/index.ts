@@ -19,7 +19,15 @@ interface ImageReadyRequest {
 
 interface IPFSResponse {
   cid: string;
-  [key: string]: any;
+  size: number;
+  name: string;
+}
+
+interface Environment {
+  IPFS_UPLOAD_URL: string;
+  IPFS_API_KEY: string;
+  ARTISTICJAMKILLER: Fetcher;
+  NARRATIVESJAMKILLER: Fetcher;
 }
 
 export default {
@@ -258,53 +266,81 @@ export default {
           hasUploadUrl: !!env.IPFS_UPLOAD_URL,
           hasApiKey: !!env.IPFS_API_KEY
         });
-        
-        try {
-          console.log("Attempting IPFS upload");
-          const ipfsResponse = await fetch(env.IPFS_UPLOAD_URL, {
+
+        // First, upload the image to IPFS if it exists
+        let imageIpfsUrl = metadata.image;
+        if (metadata.image && metadata.image.startsWith('data:')) {
+          console.log("Uploading image to IPFS first");
+          const imageResponse = await fetch(env.IPFS_UPLOAD_URL, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               "Authorization": `Bearer ${env.IPFS_API_KEY}`,
-              "x-api-key": env.IPFS_API_KEY  // QuickNode requires this header
+              "x-api-key": env.IPFS_API_KEY
             },
             body: JSON.stringify({
-              data: metadata,
-              pin: true  // QuickNode specific parameter
+              data: metadata.image,
+              pin: true
             })
           });
-          
-          console.log("IPFS response status:", ipfsResponse.status);
-          
-          if (!ipfsResponse.ok) {
-            const errorText = await ipfsResponse.text();
-            console.error("IPFS error response:", errorText);
-            throw new Error(`IPFS upload failed: ${ipfsResponse.status} - ${errorText}`);
+
+          if (!imageResponse.ok) {
+            const errorText = await imageResponse.text();
+            console.error("Image IPFS error response:", errorText);
+            throw new Error(`Image IPFS upload failed: ${imageResponse.status} - ${errorText}`);
           }
-          
-          const ipfsResponseData = await ipfsResponse.json();
-          console.log("IPFS upload successful");
-          
-          const ipfsData = ipfsResponseData as IPFSResponse;
-          const ipfsUri = `ipfs://${ipfsData.cid}`;
-          
-          return new Response(
-            JSON.stringify({
-              success: true,
-              message: "Metadata uploaded to IPFS",
-              uri: ipfsUri
-            }),
-            {
-              headers: {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "https://mojohand.producerprotocol.pro"
-              }
-            }
-          );
-        } catch (fetchError: any) {
-          console.error("IPFS fetch error:", fetchError.message);
-          throw fetchError;
+
+          const imageIpfsData = await imageResponse.json() as IPFSResponse;
+          imageIpfsUrl = `ipfs://${imageIpfsData.cid}`;
         }
+        
+        // Then create metadata with the IPFS image URL
+        const metadataToUpload = {
+          ...metadata,
+          image: imageIpfsUrl
+        };
+        
+        console.log("Uploading metadata to IPFS");
+        const ipfsResponse = await fetch(env.IPFS_UPLOAD_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${env.IPFS_API_KEY}`,
+            "x-api-key": env.IPFS_API_KEY
+          },
+          body: JSON.stringify({
+            data: metadataToUpload,
+            pin: true
+          })
+        });
+        
+        console.log("IPFS response status:", ipfsResponse.status);
+        
+        if (!ipfsResponse.ok) {
+          const errorText = await ipfsResponse.text();
+          console.error("IPFS error response:", errorText);
+          throw new Error(`IPFS upload failed: ${ipfsResponse.status} - ${errorText}`);
+        }
+        
+        const ipfsResponseData = await ipfsResponse.json();
+        console.log("IPFS upload successful");
+        
+        const ipfsData = ipfsResponseData as IPFSResponse;
+        const ipfsUri = `ipfs://${ipfsData.cid}`;
+        
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: "Metadata uploaded to IPFS",
+            uri: ipfsUri
+          }),
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "https://mojohand.producerprotocol.pro"
+            }
+          }
+        );
       } catch (error: any) {
         console.error("Upload handler error:", error.message, error.stack);
         return new Response(
