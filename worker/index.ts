@@ -226,10 +226,15 @@ export default {
     // Add this handler right before your final "Method Not Allowed" response
     else if (request.method === "POST" && url.pathname === "/upload") {
       try {
+        console.log("Starting /upload handler");
+        
         const data = await request.json();
+        console.log("Request data received, size:", JSON.stringify(data).length);
+        
         const { metadata, userId } = data as { metadata: any, userId: string };
         
         if (!userId || !metadata) {
+          console.log("Missing required fields");
           return new Response(
             JSON.stringify({ 
               success: false, 
@@ -245,38 +250,55 @@ export default {
           );
         }
         
-        // Upload to IPFS using the secrets
-        const ipfsResponse = await fetch(env.IPFS_UPLOAD_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${env.IPFS_API_KEY}`
-          },
-          body: JSON.stringify(metadata)
+        console.log("Environment check:", {
+          hasUploadUrl: !!env.IPFS_UPLOAD_URL,
+          hasApiKey: !!env.IPFS_API_KEY
         });
         
-        if (!ipfsResponse.ok) {
-          throw new Error(`IPFS upload failed: ${ipfsResponse.statusText}`);
-        }
-        
-        const ipfsResponseData = await ipfsResponse.json();
-        const ipfsData = ipfsResponseData as IPFSResponse;
-        const ipfsUri = `ipfs://${ipfsData.cid}`;
-        
-        return new Response(
-          JSON.stringify({
-            success: true,
-            message: "Metadata uploaded to IPFS",
-            uri: ipfsUri
-          }),
-          {
+        try {
+          console.log("Attempting IPFS upload");
+          const ipfsResponse = await fetch(env.IPFS_UPLOAD_URL, {
+            method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*"
-            }
+              "Authorization": `Bearer ${env.IPFS_API_KEY}`
+            },
+            body: JSON.stringify(metadata)
+          });
+          
+          console.log("IPFS response status:", ipfsResponse.status);
+          
+          if (!ipfsResponse.ok) {
+            const errorText = await ipfsResponse.text();
+            console.error("IPFS error response:", errorText);
+            throw new Error(`IPFS upload failed: ${ipfsResponse.status} - ${errorText}`);
           }
-        );
+          
+          const ipfsResponseData = await ipfsResponse.json();
+          console.log("IPFS upload successful");
+          
+          const ipfsData = ipfsResponseData as IPFSResponse;
+          const ipfsUri = `ipfs://${ipfsData.cid}`;
+          
+          return new Response(
+            JSON.stringify({
+              success: true,
+              message: "Metadata uploaded to IPFS",
+              uri: ipfsUri
+            }),
+            {
+              headers: {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*"
+              }
+            }
+          );
+        } catch (fetchError: any) {
+          console.error("IPFS fetch error:", fetchError.message);
+          throw fetchError;
+        }
       } catch (error: any) {
+        console.error("Upload handler error:", error.message, error.stack);
         return new Response(
           JSON.stringify({
             success: false,
