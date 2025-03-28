@@ -18,9 +18,19 @@ interface ImageReadyRequest {
 }
 
 interface IPFSResponse {
-  cid: string;
-  size: number;
-  name: string;
+  requestid: string;
+  status: string;
+  created: string;
+  pin: {
+    cid: string;
+    name: string;
+    origins: string[];
+    meta: any;
+    info: {
+      size: string;
+      delegates: string[];
+    };
+  };
 }
 
 interface Environment {
@@ -203,7 +213,7 @@ export default {
         
         const ipfsResponseData = await ipfsResponse.json();
         const ipfsData = ipfsResponseData as IPFSResponse;
-        const ipfsUri = `ipfs://${ipfsData.cid}`;
+        const ipfsUri = `ipfs://${ipfsData.pin.cid}`;
         
         return new Response(
           JSON.stringify({
@@ -271,17 +281,28 @@ export default {
         let imageIpfsUrl = metadata.image;
         if (metadata.image && metadata.image.startsWith('data:')) {
           console.log("Uploading image to IPFS first");
-          const imageResponse = await fetch(env.IPFS_UPLOAD_URL, {
+          
+          // Convert base64 to blob
+          const base64Data = metadata.image.split(',')[1];
+          const binaryData = atob(base64Data);
+          const bytes = new Uint8Array(binaryData.length);
+          for (let i = 0; i < binaryData.length; i++) {
+            bytes[i] = binaryData.charCodeAt(i);
+          }
+          const blob = new Blob([bytes], { type: 'image/png' });
+          
+          // Create form data
+          const formData = new FormData();
+          formData.append('Body', blob);
+          formData.append('Key', `image-${userId}.png`);
+          formData.append('ContentType', 'image/png');
+
+          const imageResponse = await fetch('https://api.quicknode.com/ipfs/rest/v1/s3/put-object', {
             method: "POST",
             headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${env.IPFS_API_KEY}`,
               "x-api-key": env.IPFS_API_KEY
             },
-            body: JSON.stringify({
-              data: metadata.image,
-              pin: true
-            })
+            body: formData
           });
 
           if (!imageResponse.ok) {
@@ -291,7 +312,7 @@ export default {
           }
 
           const imageIpfsData = await imageResponse.json() as IPFSResponse;
-          imageIpfsUrl = `ipfs://${imageIpfsData.cid}`;
+          imageIpfsUrl = `ipfs://${imageIpfsData.pin.cid}`;
         }
         
         // Then create metadata with the IPFS image URL
@@ -300,18 +321,22 @@ export default {
           image: imageIpfsUrl
         };
         
+        // Convert metadata to blob
+        const metadataBlob = new Blob([JSON.stringify(metadataToUpload)], { type: 'application/json' });
+        
+        // Create form data for metadata
+        const metadataFormData = new FormData();
+        metadataFormData.append('Body', metadataBlob);
+        metadataFormData.append('Key', `metadata-${userId}.json`);
+        metadataFormData.append('ContentType', 'application/json');
+        
         console.log("Uploading metadata to IPFS");
-        const ipfsResponse = await fetch(env.IPFS_UPLOAD_URL, {
+        const ipfsResponse = await fetch('https://api.quicknode.com/ipfs/rest/v1/s3/put-object', {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${env.IPFS_API_KEY}`,
             "x-api-key": env.IPFS_API_KEY
           },
-          body: JSON.stringify({
-            data: metadataToUpload,
-            pin: true
-          })
+          body: metadataFormData
         });
         
         console.log("IPFS response status:", ipfsResponse.status);
@@ -322,11 +347,10 @@ export default {
           throw new Error(`IPFS upload failed: ${ipfsResponse.status} - ${errorText}`);
         }
         
-        const ipfsResponseData = await ipfsResponse.json();
+        const ipfsResponseData = await ipfsResponse.json() as IPFSResponse;
         console.log("IPFS upload successful");
         
-        const ipfsData = ipfsResponseData as IPFSResponse;
-        const ipfsUri = `ipfs://${ipfsData.cid}`;
+        const ipfsUri = `ipfs://${ipfsResponseData.pin.cid}`;
         
         return new Response(
           JSON.stringify({
