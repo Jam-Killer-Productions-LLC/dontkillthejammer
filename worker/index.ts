@@ -180,9 +180,13 @@ export default {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${env.IPFS_API_KEY}`
+            "Authorization": `Bearer ${env.IPFS_API_KEY}`,
+            "x-api-key": env.IPFS_API_KEY  // QuickNode requires this header
           },
-          body: JSON.stringify(metadata)
+          body: JSON.stringify({
+            data: metadata,
+            pin: true  // QuickNode specific parameter
+          })
         });
         
         if (!ipfsResponse.ok) {
@@ -261,9 +265,13 @@ export default {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${env.IPFS_API_KEY}`
+              "Authorization": `Bearer ${env.IPFS_API_KEY}`,
+              "x-api-key": env.IPFS_API_KEY  // QuickNode requires this header
             },
-            body: JSON.stringify(metadata)
+            body: JSON.stringify({
+              data: metadata,
+              pin: true  // QuickNode specific parameter
+            })
           });
           
           console.log("IPFS response status:", ipfsResponse.status);
