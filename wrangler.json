@@ -24,5 +24,6 @@
       "pattern": "metaupload.producerprotocol.pro/*",
       "zone_name": "producerprotocol.pro"
     }
-  ]
+  ],
+  "secrets": ["IPFS_API_KEY", "IPFS_UPLOAD_URL"]
 }
