@@ -1,12 +1,25 @@
 interface Env {
   ARTISTICJAMKILLER: Service; // Binding to artistic-worker
   NARRATIVESJAMKILLER: Service; // Binding to jamkillernarrative
+  IPFS_API_KEY: string;    // Add this
+  IPFS_UPLOAD_URL: string; // Add this
 }
 
 // Type for the incoming request payload
 interface GenerateRequest {
   userId: string;
   prompt: string;
+}
+
+// Add these interfaces near the top of your file
+interface ImageReadyRequest {
+  userId: string;
+  image: string;
+}
+
+interface IPFSResponse {
+  cid: string;
+  [key: string]: any;
 }
 
 export default {
@@ -115,6 +128,84 @@ export default {
           }
         );
 
+      } catch (error: any) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: error.message
+          }),
+          { 
+            headers: { 
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*"
+            }, 
+            status: 500 
+          }
+        );
+      }
+    }
+
+    // Then add this inside your fetch function, right before the final "Method Not Allowed" response
+    else if (request.method === "POST" && url.pathname === "/image-ready") {
+      try {
+        const data = await request.json();
+        const { userId, image } = data as ImageReadyRequest;
+        
+        if (!userId || !image) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: "Missing required fields" 
+            }),
+            { 
+              headers: { 
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*"
+              }, 
+              status: 400 
+            }
+          );
+        }
+        
+        // Create metadata with the image
+        const metadata = {
+          name: "Don't Kill The Jam NFT",
+          description: "A Jam Killer Storied Collectors NFT",
+          image: image,
+          attributes: []
+        };
+        
+        // Upload to IPFS using the secrets
+        const ipfsResponse = await fetch(env.IPFS_UPLOAD_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${env.IPFS_API_KEY}`
+          },
+          body: JSON.stringify(metadata)
+        });
+        
+        if (!ipfsResponse.ok) {
+          throw new Error(`IPFS upload failed: ${ipfsResponse.statusText}`);
+        }
+        
+        const ipfsResponseData = await ipfsResponse.json();
+        const ipfsData = ipfsResponseData as IPFSResponse;
+        const ipfsUri = `ipfs://${ipfsData.cid}`;
+        
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: "Metadata uploaded to IPFS",
+            uri: ipfsUri
+          }),
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "*"
+            }
+          }
+        );
       } catch (error: any) {
         return new Response(
           JSON.stringify({
