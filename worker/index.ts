@@ -243,7 +243,7 @@ export default {
             { 
               headers: { 
                 "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
+                "Access-Control-Allow-Origin": "https://mojohand.producerprotocol.pro"
               }, 
               status: 400 
             }
@@ -289,7 +289,7 @@ export default {
             {
               headers: {
                 "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
+                "Access-Control-Allow-Origin": "https://mojohand.producerprotocol.pro"
               }
             }
           );
@@ -307,7 +307,7 @@ export default {
           { 
             headers: { 
               "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*"
+              "Access-Control-Allow-Origin": "https://mojohand.producerprotocol.pro"
             }, 
             status: 500 
           }
